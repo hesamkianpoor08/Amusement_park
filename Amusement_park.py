@@ -104,15 +104,6 @@ st.markdown("""
         color: #000000 !important;
         font-weight: bold;
     }
-
-    /* Force Plotly SVG text to be black and fully opaque (helps against global CSS overrides) */
-    .stPlotlyChart svg, .stPlotlyChart svg text, .js-plotly-plot svg text {
-        fill: #000000 !important;
-        color: #000000 !important;
-        opacity: 1 !important;
-        -webkit-text-fill-color: #000000 !important;
-        stroke: none !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -123,23 +114,16 @@ if 'ride_type' not in st.session_state:
     st.session_state.ride_type = None
 if 'basic_params' not in st.session_state:
     st.session_state.basic_params = {}
-# Set default wind_force True so checkbox is checked by default
 if 'advanced_params' not in st.session_state:
     st.session_state.advanced_params = {
-        'wind_force': True,              # default checked
+        'wind_force': False,
         'earthquake_force': False,
-        'snow_force': False,
-        # optional defaults for numeric fields
-        'height': 66.7,
-        'gravity': 9.81,
-        'air_density': 1.225,
-        'safety_factor': 1.5
+        'snow_force': False
     }
 if 'validation_errors' not in st.session_state:
     st.session_state.validation_errors = []
 
-# --- Wind Load Calculation Function (cached for performance) ---
-@st.cache_data(show_spinner=False)
+# --- Wind Load Calculation Function ---
 def calculate_wind_load(H, omega, g, rho_air, Ax=303.3, Ay=592.5, z0=0.01, c_dir=1, c_season=1, c0=1, cp=1.2):
     z = np.arange(1, H + 1)
     v_b0 = 100 / 3.6
@@ -155,7 +139,7 @@ def calculate_wind_load(H, omega, g, rho_air, Ax=303.3, Ay=592.5, z0=0.01, c_dir
     Fwx = q_p * cp * Ax / 1e3
     return {'z': z, 'vm': vm, 'vm_max': vm_max, 'Fwy': Fwy, 'Fwx': Fwx, 'q_p': q_p, 'Iv': Iv}
 
-# --- Plotly Plots (updated to force white background and black text) ---
+# --- Plotly Plots ---
 def create_wind_plots(results):
     fig = make_subplots(
         rows=1, cols=2,
@@ -179,36 +163,17 @@ def create_wind_plots(results):
         row=1, col=2
     )
 
-    axis_common = dict(
-        gridcolor='#E0E0E0',
-        linecolor='#000000',
-        zerolinecolor='#BDBDBD',
-        tickfont=dict(color='#000000', size=11),
-        title_font=dict(color='#000000', size=13),
-        showgrid=True
-    )
-
-    fig.update_xaxes(title_text="Wind Load [kN]", row=1, col=1, **axis_common)
-    fig.update_xaxes(title_text="Wind Velocity [m/s]", row=1, col=2, **axis_common)
-    fig.update_yaxes(title_text="Height [m]", row=1, col=1, **axis_common)
-    fig.update_yaxes(title_text="Height [m]", row=1, col=2, **axis_common)
-
+    fig.update_xaxes(title_text="Wind Load [kN]", row=1, col=1, gridcolor='#E0E0E0')
+    fig.update_xaxes(title_text="Wind Velocity [m/s]", row=1, col=2, gridcolor='#E0E0E0')
+    fig.update_yaxes(title_text="Height [m]", gridcolor='#E0E0E0')
+    
     fig.update_layout(
-        template="plotly_white",
-        font=dict(color='black', size=12),
-        plot_bgcolor='white',
+        height=500, 
+        plot_bgcolor='white', 
         paper_bgcolor='white',
-        height=520,
-        margin=dict(l=90, r=60, t=90, b=70),
-        showlegend=True,
-        legend=dict(bgcolor='rgba(255,255,255,0.95)', bordercolor='#BDBDBD', borderwidth=1, font=dict(color='#000000')),
-        hovermode='closest',
-        hoverlabel=dict(bgcolor="white", font_size=13, font_family="sans-serif", font_color="black", bordercolor="#2196F3")
+        font=dict(color='black'),
+        showlegend=True
     )
-
-    for ann in fig.layout.annotations:
-        ann.font = dict(color='#000000', size=13)
-
     return fig
 
 def create_placeholder_plot(title):
@@ -217,54 +182,50 @@ def create_placeholder_plot(title):
         text=f"{title}<br>(Analysis Not Implemented Yet)",
         xref="paper", yref="paper",
         x=0.5, y=0.5, showarrow=False,
-        font=dict(size=18, color="black")
+        font=dict(size=20, color="gray")
     )
     fig.update_layout(
-        height=420,
-        template="plotly_white",
+        height=400,
         plot_bgcolor='white',
         paper_bgcolor='white',
         xaxis=dict(visible=False),
-        yaxis=dict(visible=False),
-        margin=dict(l=60, r=60, t=60, b=60)
+        yaxis=dict(visible=False)
     )
     return fig
 
 def create_component_diagram(diameter, height, capacity, motor_power):
     fig = go.Figure()
     
-    theta = np.linspace(0, 2*np.pi, 200)
+    # Ferris wheel structure
+    theta = np.linspace(0, 2*np.pi, 100)
     x_wheel = diameter/2 * np.cos(theta)
     y_wheel = diameter/2 * np.sin(theta) + height/2
     
     fig.add_trace(go.Scatter(x=x_wheel, y=y_wheel, mode='lines', 
                              name='Wheel Structure', line=dict(color='#2196F3', width=3)))
     
+    # Support structure
     fig.add_trace(go.Scatter(x=[0, 0], y=[0, height/2], mode='lines',
-                             name='Support Tower', line=dict(color='#FF5722', width=6)))
+                             name='Support Tower', line=dict(color='#FF5722', width=5)))
     
+    # Annotations
     annotations = [
-        dict(x=0, y=height + diameter*0.05 + 2, text=f"Height: {height} m", showarrow=False, font=dict(color='black')),
-        dict(x=diameter/2 + 2, y=height/2, text=f"Diameter: {diameter} m", showarrow=False, font=dict(color='black')),
-        dict(x=0, y=-5, text=f"Motor Power: {motor_power:.1f} kW", showarrow=False, font=dict(color='black')),
-        dict(x=0, y=-8, text=f"Capacity: {capacity} passengers", showarrow=False, font=dict(color='black'))
+        dict(x=0, y=height + 2, text=f"Height: {height} m", showarrow=False),
+        dict(x=diameter/2 + 2, y=height/2, text=f"Diameter: {diameter} m", showarrow=False),
+        dict(x=0, y=-5, text=f"Motor Power: {motor_power:.1f} kW", showarrow=False),
+        dict(x=0, y=-8, text=f"Capacity: {capacity} passengers", showarrow=False)
     ]
     
     fig.update_layout(
-        title=dict(text="Ferris Wheel Components & Specifications", font=dict(color='black')),
-        height=620,
-        template="plotly_white",
+        title="Ferris Wheel Components & Specifications",
+        height=600,
         plot_bgcolor='white',
         paper_bgcolor='white',
         showlegend=True,
-        xaxis=dict(title="Width [m]", gridcolor='#E0E0E0', zeroline=True, linecolor='#000000', tickfont=dict(color='#000000')),
-        yaxis=dict(title="Height [m]", gridcolor='#E0E0E0', zeroline=True, linecolor='#000000', tickfont=dict(color='#000000')),
-        annotations=annotations,
-        margin=dict(l=80, r=80, t=80, b=80)
+        xaxis=dict(title="Width [m]", gridcolor='#E0E0E0', zeroline=True),
+        yaxis=dict(title="Height [m]", gridcolor='#E0E0E0', zeroline=True),
+        annotations=annotations
     )
-
-    for a in fig.layout.annotations:
-        a.font = dict(color='#000000')
     return fig
 
 # --- Validation Function ---
@@ -398,24 +359,25 @@ elif st.session_state.step == 2:
     st.subheader("📋 Environmental Load Analysis (Optional)")
     col1, col2, col3 = st.columns(3)
     
-    # Wind checkbox: default checked (True) and user CAN change it
     with col1:
-        wind = st.checkbox("🌬️ Wind Force Analysis", value=st.session_state.advanced_params.get('wind_force', True))
+        wind = st.checkbox("🌬️ Wind Force Analysis", 
+                          value=st.session_state.advanced_params.get('wind_force', False))
         st.caption("Standard: BS EN 1991-1-4")
+    
     with col2:
         earthquake = st.checkbox("🏚️ Earthquake Analysis", 
                                 value=st.session_state.advanced_params.get('earthquake_force', False))
         st.caption("Standard: EN 1998-1")
+    
     with col3:
         snow = st.checkbox("❄️ Snow Load Analysis", 
                           value=st.session_state.advanced_params.get('snow_force', False))
         st.caption("Standard: EN 1991-1-3")
     
-    # Update session state with the user's choices
     st.session_state.advanced_params.update({
-        'wind_force': bool(wind),
-        'earthquake_force': bool(earthquake),
-        'snow_force': bool(snow)
+        'wind_force': wind,
+        'earthquake_force': earthquake,
+        'snow_force': snow
     })
     
     st.markdown("---")
@@ -486,8 +448,8 @@ elif st.session_state.step == 2:
 elif st.session_state.step == 3:
     st.header("Step 4: Force Analysis Results")
     
-    # Wind Force Analysis (runs if the checkbox is checked)
-    if st.session_state.advanced_params.get('wind_force', True):
+    # Wind Force Analysis
+    if st.session_state.advanced_params.get('wind_force'):
         st.subheader("🌬️ Wind Force Analysis (BS EN 1991-1-4)")
         
         # Calculate wind loads
@@ -507,7 +469,7 @@ elif st.session_state.step == 3:
         
         # Display plots
         fig = create_wind_plots(results)
-        st.plotly_chart(fig, use_container_width=True, config={'responsive': True})
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("🌬️ Wind Force Analysis: Not selected")
     
@@ -517,7 +479,7 @@ elif st.session_state.step == 3:
     if st.session_state.advanced_params.get('earthquake_force'):
         st.subheader("🏚️ Earthquake Force Analysis (EN 1998-1)")
         fig = create_placeholder_plot("Earthquake Force Analysis")
-        st.plotly_chart(fig, use_container_width=True, config={'responsive': True})
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("🏚️ Earthquake Analysis: Not selected")
     
@@ -527,7 +489,7 @@ elif st.session_state.step == 3:
     if st.session_state.advanced_params.get('snow_force'):
         st.subheader("❄️ Snow Load Analysis (EN 1991-1-3)")
         fig = create_placeholder_plot("Snow Load Analysis")
-        st.plotly_chart(fig, use_container_width=True, config={'responsive': True})
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("❄️ Snow Load Analysis: Not selected")
     
@@ -571,7 +533,7 @@ elif st.session_state.step == 4:
     # Component diagram
     st.subheader("🔧 Component Layout & Structure")
     fig = create_component_diagram(diameter, height, num_cabins * capacity, motor_power)
-    st.plotly_chart(fig, use_container_width=True, config={'responsive': True})
+    st.plotly_chart(fig, use_container_width=True)
     
     st.markdown("---")
     
@@ -606,7 +568,7 @@ elif st.session_state.step == 4:
             st.session_state.step = 0
             st.session_state.ride_type = None
             st.session_state.basic_params = {}
-            st.session_state.advanced_params = {'wind_force': True, 'earthquake_force': False, 'snow_force': False, 'height':66.7, 'gravity':9.81, 'air_density':1.225, 'safety_factor':1.5}
+            st.session_state.advanced_params = {'wind_force': False, 'earthquake_force': False, 'snow_force': False}
             st.rerun()
     with col3:
         st.success("✅ Design Complete!")
