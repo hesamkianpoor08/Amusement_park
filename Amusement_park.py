@@ -233,9 +233,9 @@ def create_placeholder_plot(title):
 def create_component_diagram(diameter, height, capacity, motor_power):
     """
     Ferris wheel figure with:
-    - continuous wheel outline (line)
-    - marker points along the wheel (markers) — clicking/selecting a point will NOT turn it black,
-      and hover/click shows only bold coordinates (no extra text).
+    - smooth outline (line)
+    - interactive markers along the wheel (markers) that DO NOT become black on click,
+      and hover/click shows only bold coordinates (no other text).
     """
     fig = go.Figure()
     
@@ -249,28 +249,36 @@ def create_component_diagram(diameter, height, capacity, motor_power):
         x=x_wheel, y=y_wheel, mode='lines',
         name='Wheel Structure',
         line=dict(color='#2196F3', width=3),
-        hoverinfo='skip',  # line itself doesn't show hover (markers will)
+        hoverinfo='skip',
         showlegend=False
     ))
 
-    # add markers along the wheel — these are interactive points
+    # interactive markers along the wheel
+    # IMPORTANT: set marker.line.color equal to marker.color to avoid black outline on selection
+    wheel_color = '#2196F3'
     fig.add_trace(go.Scatter(
         x=x_wheel, y=y_wheel, mode='markers',
         name='Wheel Points',
-        marker=dict(size=6, color='#2196F3', line=dict(width=0)),
+        marker=dict(
+            size=6,
+            color=wheel_color,
+            line=dict(color=wheel_color, width=0),  # ensure outline matches fill (no black)
+            opacity=1
+        ),
         hovertemplate='<b>%{x:.2f}, %{y:.2f}</b><extra></extra>',
-        selected=dict(marker=dict(color='#2196F3', size=9)),   # keep same color on select (not black)
-        unselected=dict(marker=dict(opacity=0.7)),
+        selected=dict(marker=dict(color=wheel_color, line=dict(color=wheel_color, width=0), size=9)),
+        unselected=dict(marker=dict(opacity=0.75)),
         showlegend=False
     ))
 
     # support tower (line) + support points markers
     support_x = [0, 0]
     support_y = [0, height/2]
+    support_color = '#FF5722'
     fig.add_trace(go.Scatter(
         x=support_x, y=support_y, mode='lines',
         name='Support Tower',
-        line=dict(color='#FF5722', width=6),
+        line=dict(color=support_color, width=6),
         hoverinfo='skip',
         showlegend=False
     ))
@@ -278,10 +286,10 @@ def create_component_diagram(diameter, height, capacity, motor_power):
     fig.add_trace(go.Scatter(
         x=support_x, y=support_y, mode='markers',
         name='Support Points',
-        marker=dict(size=8, color='#FF5722'),
+        marker=dict(size=8, color=support_color, line=dict(color=support_color, width=0)),
         hovertemplate='<b>%{x:.2f}, %{y:.2f}</b><extra></extra>',
-        selected=dict(marker=dict(color='#FF5722', size=10)),
-        unselected=dict(marker=dict(opacity=0.8)),
+        selected=dict(marker=dict(color=support_color, line=dict(color=support_color, width=0), size=10)),
+        unselected=dict(marker=dict(opacity=0.9)),
         showlegend=False
     ))
     
@@ -304,7 +312,8 @@ def create_component_diagram(diameter, height, capacity, motor_power):
         yaxis=dict(title="Height [m]", gridcolor='#E0E0E0', zeroline=True, linecolor='#000000', tickfont=dict(color='#000000')),
         annotations=annotations,
         margin=dict(l=80, r=80, t=80, b=80),
-        clickmode='event+select'  # allow click/select behavior (selected marker style controlled above)
+        clickmode='event+select',  # allow click/select behavior (selected marker style controlled above)
+        hovermode='closest'
     )
 
     for a in fig.layout.annotations:
@@ -672,5 +681,6 @@ elif st.session_state.step == 4:
         st.button("⬅️ Back", key="back_from_final", on_click=go_back)
     
     st.success("✅ Design Complete!")
+
 
 
