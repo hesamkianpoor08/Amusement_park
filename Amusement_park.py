@@ -210,7 +210,7 @@ def create_wind_plots(results):
         ann.font = dict(color='#000000', size=13)
 
     return fig
-
+# بعدا باید تغییر کند
 def create_placeholder_plot(title):
     fig = go.Figure()
     fig.add_annotation(
@@ -458,9 +458,9 @@ elif st.session_state.step == 1:
     # Navigation: Next on LEFT, Back on RIGHT (unique keys & callbacks)
     left_col, middle_col, right_col = st.columns([1, 0.5, 1])
     with left_col:
-        st.button("Next ➡️", key="next_from_basic", on_click=go_next_from_basic)
+        st.button("Next ⬅️", key="next_from_basic", on_click=go_next_from_basic) 
     with right_col:
-        st.button("⬅️ Back", key="back_from_basic", on_click=go_back)
+        st.button("➡️ Back", key="back_from_basic", on_click=go_back)
 
 # === STEP 2: Advanced Parameters ===
 elif st.session_state.step == 2:
@@ -547,9 +547,9 @@ elif st.session_state.step == 2:
     # Navigation: Next (left), Back (right) with callbacks
     left_col, mid_col, right_col = st.columns([1, 0.5, 1])
     with left_col:
-        st.button("Next ➡️", key="next_from_advanced", on_click=go_next_from_advanced)
+        st.button("Next ⬅️", key="next_from_advanced", on_click=go_next_from_advanced)
     with right_col:
-        st.button("⬅️ Back", key="back_from_advanced", on_click=go_back)
+        st.button("➡️ Back", key="back_from_advanced", on_click=go_back)
 
 # === STEP 3: Results - Force Analysis ===
 elif st.session_state.step == 3:
@@ -606,9 +606,9 @@ elif st.session_state.step == 3:
     # Navigation: Next (left), Back (right)
     left_col, mid_col, right_col = st.columns([1, 0.5, 1])
     with left_col:
-        st.button("Next ➡️", key="next_from_results", on_click=lambda: st.session_state.__setitem__('step', min(st.session_state.step+1,4)))
+        st.button("Next ⬅️", key="next_from_results", on_click=lambda: st.session_state.__setitem__('step', min(st.session_state.step+1,4)))
     with right_col:
-        st.button("⬅️ Back", key="back_from_results", on_click=go_back)
+        st.button("➡️ Back", key="back_from_results", on_click=go_back)
 
 # === STEP 4: Final Results - Component Diagram ===
 elif st.session_state.step == 4:
@@ -673,7 +673,7 @@ elif st.session_state.step == 4:
     with mid_col:
         st.button("🔄 Start New Design", key="reset_design", on_click=reset_design)
     with right_col:
-        st.button("⬅️ Back", key="back_from_final", on_click=go_back)
+        st.button("➡️ Back", key="back_from_final", on_click=go_back)
     
     st.success("✅ Design Complete!")
 
