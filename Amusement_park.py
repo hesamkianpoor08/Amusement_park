@@ -231,18 +231,61 @@ def create_placeholder_plot(title):
     return fig
 
 def create_component_diagram(diameter, height, capacity, motor_power):
+    """
+    Ferris wheel figure with:
+    - continuous wheel outline (line)
+    - marker points along the wheel (markers) — clicking/selecting a point will NOT turn it black,
+      and hover/click shows only bold coordinates (no extra text).
+    """
     fig = go.Figure()
     
+    # wheel outline (smooth line)
     theta = np.linspace(0, 2*np.pi, 200)
     x_wheel = diameter/2 * np.cos(theta)
     y_wheel = diameter/2 * np.sin(theta) + height/2
+
+    # add line for wheel structure (visual)
+    fig.add_trace(go.Scatter(
+        x=x_wheel, y=y_wheel, mode='lines',
+        name='Wheel Structure',
+        line=dict(color='#2196F3', width=3),
+        hoverinfo='skip',  # line itself doesn't show hover (markers will)
+        showlegend=False
+    ))
+
+    # add markers along the wheel — these are interactive points
+    fig.add_trace(go.Scatter(
+        x=x_wheel, y=y_wheel, mode='markers',
+        name='Wheel Points',
+        marker=dict(size=6, color='#2196F3', line=dict(width=0)),
+        hovertemplate='<b>%{x:.2f}, %{y:.2f}</b><extra></extra>',
+        selected=dict(marker=dict(color='#2196F3', size=9)),   # keep same color on select (not black)
+        unselected=dict(marker=dict(opacity=0.7)),
+        showlegend=False
+    ))
+
+    # support tower (line) + support points markers
+    support_x = [0, 0]
+    support_y = [0, height/2]
+    fig.add_trace(go.Scatter(
+        x=support_x, y=support_y, mode='lines',
+        name='Support Tower',
+        line=dict(color='#FF5722', width=6),
+        hoverinfo='skip',
+        showlegend=False
+    ))
+    # support endpoints markers (interactive)
+    fig.add_trace(go.Scatter(
+        x=support_x, y=support_y, mode='markers',
+        name='Support Points',
+        marker=dict(size=8, color='#FF5722'),
+        hovertemplate='<b>%{x:.2f}, %{y:.2f}</b><extra></extra>',
+        selected=dict(marker=dict(color='#FF5722', size=10)),
+        unselected=dict(marker=dict(opacity=0.8)),
+        showlegend=False
+    ))
     
-    fig.add_trace(go.Scatter(x=x_wheel, y=y_wheel, mode='lines', 
-                             name='Wheel Structure', line=dict(color='#2196F3', width=3)))
-    
-    fig.add_trace(go.Scatter(x=[0, 0], y=[0, height/2], mode='lines',
-                             name='Support Tower', line=dict(color='#FF5722', width=6)))
-    
+    # annotations (static labels)
     annotations = [
         dict(x=0, y=height + diameter*0.05 + 2, text=f"Height: {height} m", showarrow=False, font=dict(color='black')),
         dict(x=diameter/2 + 2, y=height/2, text=f"Diameter: {diameter} m", showarrow=False, font=dict(color='black')),
@@ -256,11 +299,12 @@ def create_component_diagram(diameter, height, capacity, motor_power):
         template="plotly_white",
         plot_bgcolor='white',
         paper_bgcolor='white',
-        showlegend=True,
+        showlegend=False,
         xaxis=dict(title="Width [m]", gridcolor='#E0E0E0', zeroline=True, linecolor='#000000', tickfont=dict(color='#000000')),
         yaxis=dict(title="Height [m]", gridcolor='#E0E0E0', zeroline=True, linecolor='#000000', tickfont=dict(color='#000000')),
         annotations=annotations,
-        margin=dict(l=80, r=80, t=80, b=80)
+        margin=dict(l=80, r=80, t=80, b=80),
+        clickmode='event+select'  # allow click/select behavior (selected marker style controlled above)
     )
 
     for a in fig.layout.annotations:
@@ -621,11 +665,12 @@ elif st.session_state.step == 4:
     # Navigation: Back (right), Reset (middle), no Next (final)
     left_col, mid_col, right_col = st.columns([1, 0.5, 1])
     with left_col:
-        st.write("")  # <-- Modified: invisible spacer (no blue empty box)
+        st.write("")  # <-- invisible spacer (no blue empty box)
     with mid_col:
         st.button("🔄 Start New Design", key="reset_design", on_click=reset_design)
     with right_col:
         st.button("⬅️ Back", key="back_from_final", on_click=go_back)
     
     st.success("✅ Design Complete!")
+
 
