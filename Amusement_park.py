@@ -230,21 +230,15 @@ def create_placeholder_plot(title):
     )
     return fig
 
+# --- Component diagram (fixed: no selected/unselected, clickmode event, white hover box with black text) ---
 def create_component_diagram(diameter, height, capacity, motor_power):
-    """
-    Ferris wheel figure with:
-    - smooth outline (line)
-    - interactive markers along the wheel (markers) that DO NOT become black on click,
-      and hover/click shows only bold coordinates (no other text).
-    """
     fig = go.Figure()
     
-    # wheel outline (smooth line)
     theta = np.linspace(0, 2*np.pi, 200)
     x_wheel = diameter/2 * np.cos(theta)
     y_wheel = diameter/2 * np.sin(theta) + height/2
 
-    # add line for wheel structure (visual)
+    # wheel outline (line)
     fig.add_trace(go.Scatter(
         x=x_wheel, y=y_wheel, mode='lines',
         name='Wheel Structure',
@@ -253,8 +247,7 @@ def create_component_diagram(diameter, height, capacity, motor_power):
         showlegend=False
     ))
 
-    # interactive markers along the wheel
-    # IMPORTANT: set marker.line.color equal to marker.color to avoid black outline on selection
+    # wheel markers (interactive) — no selected/unselected props to avoid validation issues
     wheel_color = '#2196F3'
     fig.add_trace(go.Scatter(
         x=x_wheel, y=y_wheel, mode='markers',
@@ -262,16 +255,14 @@ def create_component_diagram(diameter, height, capacity, motor_power):
         marker=dict(
             size=6,
             color=wheel_color,
-            line=dict(color=wheel_color, width=0),  # ensure outline matches fill (no black)
+            line=dict(color=wheel_color, width=0),  # outline same as fill -> avoid black border
             opacity=1
         ),
         hovertemplate='<b>%{x:.2f}, %{y:.2f}</b><extra></extra>',
-        selected=dict(marker=dict(color=wheel_color, line=dict(color=wheel_color, width=0), size=9)),
-        unselected=dict(marker=dict(opacity=0.75)),
         showlegend=False
     ))
 
-    # support tower (line) + support points markers
+    # support tower (line)
     support_x = [0, 0]
     support_y = [0, height/2]
     support_color = '#FF5722'
@@ -282,18 +273,15 @@ def create_component_diagram(diameter, height, capacity, motor_power):
         hoverinfo='skip',
         showlegend=False
     ))
-    # support endpoints markers (interactive)
+    # support markers
     fig.add_trace(go.Scatter(
         x=support_x, y=support_y, mode='markers',
         name='Support Points',
         marker=dict(size=8, color=support_color, line=dict(color=support_color, width=0)),
         hovertemplate='<b>%{x:.2f}, %{y:.2f}</b><extra></extra>',
-        selected=dict(marker=dict(color=support_color, line=dict(color=support_color, width=0), size=10)),
-        unselected=dict(marker=dict(opacity=0.9)),
         showlegend=False
     ))
     
-    # annotations (static labels)
     annotations = [
         dict(x=0, y=height + diameter*0.05 + 2, text=f"Height: {height} m", showarrow=False, font=dict(color='black')),
         dict(x=diameter/2 + 2, y=height/2, text=f"Diameter: {diameter} m", showarrow=False, font=dict(color='black')),
@@ -312,8 +300,15 @@ def create_component_diagram(diameter, height, capacity, motor_power):
         yaxis=dict(title="Height [m]", gridcolor='#E0E0E0', zeroline=True, linecolor='#000000', tickfont=dict(color='#000000')),
         annotations=annotations,
         margin=dict(l=80, r=80, t=80, b=80),
-        clickmode='event+select',  # allow click/select behavior (selected marker style controlled above)
-        hovermode='closest'
+        clickmode='event',   # only emit click events, don't apply plotly select styling
+        hovermode='closest',
+        hoverlabel=dict(
+            bgcolor='white',
+            font_size=13,
+            font_family='sans-serif',
+            font_color='black',
+            bordercolor='#2196F3'
+        )
     )
 
     for a in fig.layout.annotations:
@@ -387,7 +382,7 @@ if st.session_state.step == 0:
             st.session_state.ride_type = "Roller Coaster"
             st.info("Roller Coaster design module coming soon!")
     with col3:
-        # <-- Modified: set ride_type when Other Rides clicked and show confirmation
+        # set ride_type when Other Rides clicked and show confirmation
         if st.button("🎠 Other Rides", key="other_btn"):
             st.session_state.ride_type = "Other Rides"
             st.info("Additional ride types coming soon!")
@@ -674,13 +669,12 @@ elif st.session_state.step == 4:
     # Navigation: Back (right), Reset (middle), no Next (final)
     left_col, mid_col, right_col = st.columns([1, 0.5, 1])
     with left_col:
-        st.write("")  # <-- invisible spacer (no blue empty box)
+        st.write("")  # invisible spacer (no blue empty box)
     with mid_col:
         st.button("🔄 Start New Design", key="reset_design", on_click=reset_design)
     with right_col:
         st.button("⬅️ Back", key="back_from_final", on_click=go_back)
     
     st.success("✅ Design Complete!")
-
 
 
