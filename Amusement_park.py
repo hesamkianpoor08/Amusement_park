@@ -334,9 +334,12 @@ if st.session_state.step == 0:
             st.session_state.ride_type = "Roller Coaster"
             st.info("Roller Coaster design module coming soon!")
     with col3:
+        # <-- Modified: set ride_type when Other Rides clicked and show confirmation
         if st.button("🎠 Other Rides", key="other_btn"):
+            st.session_state.ride_type = "Other Rides"
             st.info("Additional ride types coming soon!")
     
+    # Show selection confirmation for any selected ride (including Other Rides)
     if st.session_state.ride_type:
         st.success(f"✅ Selected: {st.session_state.ride_type}")
 
@@ -393,6 +396,9 @@ elif st.session_state.step == 1:
             'capacity': int(capacity),
             'rotation_speed': float(rotation_speed)
         })
+    else:
+        # For other ride types (placeholder)
+        st.info("Basic parameters form for this ride type is not implemented yet.")
     
     # Display validation errors (if any)
     if st.session_state.validation_errors:
@@ -615,7 +621,7 @@ elif st.session_state.step == 4:
     # Navigation: Back (right), Reset (middle), no Next (final)
     left_col, mid_col, right_col = st.columns([1, 0.5, 1])
     with left_col:
-        st.button(" ", disabled=True)  # spacer (keeps layout symmetric)
+        st.write("")  # <-- Modified: invisible spacer (no blue empty box)
     with mid_col:
         st.button("🔄 Start New Design", key="reset_design", on_click=reset_design)
     with right_col:
